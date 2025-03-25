@@ -8,6 +8,10 @@ from PIL import Image
 # Load the data
 df = pd.read_csv("intersections.txt", sep='\t')
 
+# Custom distance function for Python versions < 3.8
+def calculate_distance(p1, p2):
+    return math.sqrt(sum((x - y) ** 2 for x, y in zip(p1, p2)))
+
 # Create a graph
 G = nx.Graph()
 for _, row in df.iterrows():
@@ -20,8 +24,8 @@ for _, group in df.groupby("Horizontal"):
     for i in range(len(group) - 1):
         n1 = f"{group.iloc[i]['Horizontal']} & {group.iloc[i]['Vertical']}"
         n2 = f"{group.iloc[i + 1]['Horizontal']} & {group.iloc[i + 1]['Vertical']}"
-        dist = math.dist((group.iloc[i]['X'], group.iloc[i]['Y']),
-                         (group.iloc[i + 1]['X'], group.iloc[i + 1]['Y']))
+        dist = calculate_distance((group.iloc[i]['X'], group.iloc[i]['Y']),
+                                   (group.iloc[i + 1]['X'], group.iloc[i + 1]['Y']))
         G.add_edge(n1, n2, weight=dist)
 
 # Add vertical edges
@@ -30,11 +34,11 @@ for _, group in df.groupby("Vertical"):
     for i in range(len(group) - 1):
         n1 = f"{group.iloc[i]['Horizontal']} & {group.iloc[i]['Vertical']}"
         n2 = f"{group.iloc[i + 1]['Horizontal']} & {group.iloc[i + 1]['Vertical']}"
-        dist = math.dist((group.iloc[i]['X'], group.iloc[i]['Y']),
-                         (group.iloc[i + 1]['X'], group.iloc[i + 1]['Y']))
+        dist = calculate_distance((group.iloc[i]['X'], group.iloc[i]['Y']),
+                                   (group.iloc[i + 1]['X'], group.iloc[i + 1]['Y']))
         G.add_edge(n1, n2, weight=dist)
 
-# The Circle Edges 
+# The Circle Edges
 circle_nodes = df[df["Horizontal"] == "The Circle"].copy()
 circle_names = [f"{row['Horizontal']} & {row['Vertical']}" for _, row in circle_nodes.iterrows()]
 center_x = circle_nodes["X"].mean()
@@ -50,10 +54,10 @@ for i in range(len(circle_names)):
     n2 = circle_names[(i + 1) % len(circle_names)]
     p1 = G.nodes[n1]["pos"]
     p2 = G.nodes[n2]["pos"]
-    dist = math.dist(p1, p2)
+    dist = calculate_distance(p1, p2)
     G.add_edge(n1, n2, weight=dist)
 
-proximity_threshold = 60  
+proximity_threshold = 60
 all_nodes = list(G.nodes(data=True))
 for i in range(len(all_nodes)):
     for j in range(i + 1, len(all_nodes)):
@@ -61,7 +65,7 @@ for i in range(len(all_nodes)):
         node2, data2 = all_nodes[j]
         pos1 = data1["pos"]
         pos2 = data2["pos"]
-        dist = math.dist(pos1, pos2)
+        dist = calculate_distance(pos1, pos2)
 
         # Parse street names
         h1, v1 = node1.split(" & ")
@@ -77,28 +81,28 @@ node_a = "Pondside Ave. & Quack St."
 node_b = "Breadcrumb Ave. & Waddle Way"
 pos_a = G.nodes[node_a]["pos"]
 pos_b = G.nodes[node_b]["pos"]
-dist = math.dist(pos_a, pos_b)
+dist = calculate_distance(pos_a, pos_b)
 G.add_edge(node_a, node_b, weight=dist)
 
 node_c = "Migration Ave. & Quack St."
 node_d = "Aquatic Ave. & Waddle Way"
 pos_c = G.nodes[node_c]["pos"]
 pos_d = G.nodes[node_d]["pos"]
-dist = math.dist(pos_c, pos_d)
+dist = calculate_distance(pos_c, pos_d)
 G.add_edge(node_c, node_d, weight=dist)
 
 node_e = "Migration Ave. & Mallard St."
 node_f = "Aquatic Ave. & Beak St."
 pos_e = G.nodes[node_e]["pos"]
 pos_f = G.nodes[node_f]["pos"]
-dist = math.dist(pos_e, pos_f)
+dist = calculate_distance(pos_e, pos_f)
 G.add_edge(node_e, node_f, weight=dist)
 
 node_g = "Breadcrumb Ave. & The Circle"
 node_h = "The Circle & Waterfoul Way"
 pos_g = G.nodes[node_g]["pos"]
 pos_h = G.nodes[node_h]["pos"]
-dist = math.dist(pos_g, pos_h)
+dist = calculate_distance(pos_g, pos_h)
 G.add_edge(node_g, node_h, weight=dist)
 
 # Nearest node by coordinates
@@ -106,7 +110,7 @@ def nearest_node(x, y):
     min_dist = float('inf')
     nearest = None
     for _, row in df.iterrows():
-        dist = math.dist((x, y), (row['X'], row['Y']))
+        dist = calculate_distance((x, y), (row['X'], row['Y']))
         if dist < min_dist:
             min_dist = dist
             nearest = f"{row['Horizontal']} & {row['Vertical']}"
@@ -163,7 +167,7 @@ fig, ax = plt.subplots(figsize=(12, 8))
 #     img = Image.open("map")
 #     ax.imshow(img, extent=[0, 640, 0, 480])
 # except:
-#     pass  
+#     pass
 
 # Draw all nodes and edges
 nx.draw_networkx_nodes(G, pos, ax=ax, node_size=50, node_color='lightgray')
